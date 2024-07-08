@@ -33,5 +33,5 @@ public class LongestHike {
     }
 }
 
-// Here, executing the given conditons in the question I got the output i.e
+// Here, executing the given conditon in the question I got the output i.e
 //8 here
