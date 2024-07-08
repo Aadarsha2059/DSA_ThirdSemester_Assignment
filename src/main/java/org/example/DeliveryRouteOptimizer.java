@@ -1,3 +1,7 @@
+
+//Question Number 7 solutions...
+
+
 package org.example;
 
 import javax.swing.*;
@@ -171,3 +175,5 @@ class MapPanel extends JPanel {
         }
     }
 }
+
+// executin above codes for the given conditions in the question I developed a delivery route GUI...
