@@ -1,10 +1,11 @@
+// question number 2 a solutions
+
 package org.example;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.EmptyStackException;
 import java.util.Stack;
 
 public class BasicCalculatorGUI extends JFrame {
@@ -14,115 +15,83 @@ public class BasicCalculatorGUI extends JFrame {
     private JLabel resultLabel;
 
     public BasicCalculatorGUI() {
-        // Setup JFrame
+        // Set up the frame
         setTitle("Basic Calculator");
         setSize(400, 200);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout(10, 10));
-        setResizable(false);
+        setLayout(new GridLayout(3, 1));
 
-        // Initialize components
+        // Input field
         inputField = new JTextField();
-        inputField.setPreferredSize(new Dimension(300, 30));
+        add(inputField);
 
+        // Calculate button
         calculateButton = new JButton("Calculate");
-        resultLabel = new JLabel("Result:");
+        calculateButton.addActionListener(new CalculateButtonListener());
+        add(calculateButton);
 
-        // Add components to the JFrame
-        JPanel inputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        inputPanel.add(new JLabel("Enter Expression:"));
-        inputPanel.add(inputField);
-        add(inputPanel, BorderLayout.NORTH);
+        // Result label
+        resultLabel = new JLabel("Result: ");
+        add(resultLabel);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.add(calculateButton);
-        add(buttonPanel, BorderLayout.CENTER);
-
-        JPanel resultPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        resultPanel.add(resultLabel);
-        add(resultPanel, BorderLayout.SOUTH);
-
-        // ActionListener for Calculate button
-        calculateButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String input = inputField.getText().trim();
-                if (!input.isEmpty()) {
-                    try {
-                        String result = evaluateExpression(input);
-                        resultLabel.setText("Result: " + result);
-                    } catch (IllegalArgumentException ex) {
-                        resultLabel.setText("Result: Error - " + ex.getMessage());
-                    }
-                } else {
-                    resultLabel.setText("Result: No input provided.");
-                }
-            }
-        });
+        // Make the frame visible
+        setVisible(true);
     }
 
-    // Method to evaluate mathematical expression
-    private String evaluateExpression(String expression) {
-        try {
-            Stack<Integer> operands = new Stack<>();
-            Stack<Character> operators = new Stack<>();
-
-            for (int i = 0; i < expression.length(); i++) {
-                char c = expression.charAt(i);
-
-                // Ignore spaces
-                if (c == ' ')
-                    continue;
-
-                // If digit, push it to operands stack
-                if (Character.isDigit(c)) {
-                    int num = 0;
-                    while (i < expression.length() && Character.isDigit(expression.charAt(i))) {
-                        num = num * 10 + (expression.charAt(i) - '0');
-                        i++;
-                    }
-                    i--;
-                    operands.push(num);
-                }
-                // If opening bracket, push it to operators stack
-                else if (c == '(') {
-                    operators.push(c);
-                }
-                // If closing bracket, solve entire bracket
-                else if (c == ')') {
-                    while (operators.peek() != '(') {
-                        int output = performOperation(operators.pop(), operands.pop(), operands.pop());
-                        operands.push(output);
-                    }
-                    operators.pop();
-                }
-                // If operator, perform operation
-                else if (isOperator(c)) {
-                    while (!operators.isEmpty() && precedence(c) <= precedence(operators.peek())) {
-                        int output = performOperation(operators.pop(), operands.pop(), operands.pop());
-                        operands.push(output);
-                    }
-                    operators.push(c);
-                }
-                // Invalid character
-                else {
-                    throw new IllegalArgumentException("Invalid character in expression.");
-                }
+    private class CalculateButtonListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            String expression = inputField.getText();
+            try {
+                int result = evaluate(expression);
+                resultLabel.setText("Result: " + result);
+            } catch (Exception ex) {
+                resultLabel.setText("Error: Invalid Expression");
             }
-            // Remaining elements in stacks
-            while (!operators.isEmpty()) {
-                int output = performOperation(operators.pop(), operands.pop(), operands.pop());
-                operands.push(output);
-            }
-            return operands.pop().toString();
-        } catch (EmptyStackException | ArithmeticException | IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid expression.");
         }
     }
 
-    // Method to perform arithmetic operation
-    private int performOperation(char operator, int b, int a) {
-        switch (operator) {
+    private int evaluate(String expression) {
+        Stack<Integer> values = new Stack<>();
+        Stack<Character> operators = new Stack<>();
+        for (int i = 0; i < expression.length(); i++) {
+            char ch = expression.charAt(i);
+            if (ch == ' ') continue;
+            if (ch >= '0' && ch <= '9') {
+                StringBuilder sb = new StringBuilder();
+                while (i < expression.length() && expression.charAt(i) >= '0' && expression.charAt(i) <= '9') {
+                    sb.append(expression.charAt(i++));
+                }
+                values.push(Integer.parseInt(sb.toString()));
+                i--;
+            } else if (ch == '(') {
+                operators.push(ch);
+            } else if (ch == ')') {
+                while (operators.peek() != '(') {
+                    values.push(applyOp(operators.pop(), values.pop(), values.pop()));
+                }
+                operators.pop();
+            } else if (ch == '+' || ch == '-' || ch == '*' || ch == '/') {
+                while (!operators.isEmpty() && hasPrecedence(ch, operators.peek())) {
+                    values.push(applyOp(operators.pop(), values.pop(), values.pop()));
+                }
+                operators.push(ch);
+            }
+        }
+        while (!operators.isEmpty()) {
+            values.push(applyOp(operators.pop(), values.pop(), values.pop()));
+        }
+        return values.pop();
+    }
+
+    private boolean hasPrecedence(char op1, char op2) {
+        if (op2 == '(' || op2 == ')') return false;
+        if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-')) return false;
+        return true;
+    }
+
+    private int applyOp(char op, int b, int a) {
+        switch (op) {
             case '+':
                 return a + b;
             case '-':
@@ -130,38 +99,20 @@ public class BasicCalculatorGUI extends JFrame {
             case '*':
                 return a * b;
             case '/':
-                if (b == 0)
-                    throw new ArithmeticException("Division by zero.");
+                if (b == 0) throw new UnsupportedOperationException("Cannot divide by zero");
                 return a / b;
         }
-        throw new IllegalArgumentException("Invalid operator.");
-    }
-
-    // Method to check if character is operator
-    private boolean isOperator(char c) {
-        return c == '+' || c == '-' || c == '*' || c == '/';
-    }
-
-    // Method to return precedence of operator
-    private int precedence(char c) {
-        switch (c) {
-            case '+':
-            case '-':
-                return 1;
-            case '*':
-            case '/':
-                return 2;
-        }
-        return -1;
+        return 0;
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                BasicCalculatorGUI calculator = new BasicCalculatorGUI();
-                calculator.setLocationRelativeTo(null); // Center the window
-                calculator.setVisible(true);
-            }
-        });
+        SwingUtilities.invokeLater(BasicCalculatorGUI::new);
     }
 }
+
+
+//input (1+(4+5+2)-3)+(6+11)
+//output: 26
+
+//(1+(4+50+2)-3)+(6+11) as input
+// output:71

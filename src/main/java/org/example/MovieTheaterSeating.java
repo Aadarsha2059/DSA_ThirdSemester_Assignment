@@ -1,44 +1,43 @@
-package org.example;
+//question number 2 b solutions
 
-import java.util.HashMap;
-import java.util.Map;
+package org.example;
 
 public class MovieTheaterSeating {
 
-    public static boolean canSitTogether(int[] seatingChart, int indexDiff, int valueDiff) {
-        // Map to keep track of the last occurrence of each seat number
-        Map<Integer, Integer> seatMap = new HashMap<>();
-
-        for (int i = 0; i < seatingChart.length; i++) {
-            int currentSeat = seatingChart[i];
-
-            // Check for possible friends within the allowed seat difference
-            for (int diff = -valueDiff; diff <= valueDiff; diff++) {
-                int potentialFriendSeat = currentSeat + diff;
-                if (seatMap.containsKey(potentialFriendSeat)) {
-                    int friendIndex = seatMap.get(potentialFriendSeat);
-                    if (Math.abs(i - friendIndex) <= indexDiff) {
-                        return true;
-                    }
+    public static boolean canSitTogether(int[] nums, int indexDiff, int valueDiff) {
+        // Iterate through each seat
+        for (int i = 0; i < nums.length; i++) {
+            // Check subsequent seats within the allowed indexDiff
+            for (int j = i + 1; j <= i + indexDiff && j < nums.length; j++) {
+                // Check if the absolute difference in seat numbers is within the valueDiff
+                if (Math.abs(nums[i] - nums[j]) <= valueDiff) {
+                    return true;
                 }
             }
-
-            // Update the map with the current seat and index
-            seatMap.put(currentSeat, i);
         }
-
-        // No suitable pairs found
         return false;
     }
 
     public static void main(String[] args) {
-        // Example seating chart
-        int[] seatingChart = {2, 3, 5, 4, 9};
-        int indexDiff = 2;
-        int valueDiff = 1;
+        int[] nums1 = {2, 3, 5, 4, 9};
+        int indexDiff1 = 2;
+        int valueDiff1 = 1;
+        System.out.println(canSitTogether(nums1, indexDiff1, valueDiff1)); // Output: true
 
-        boolean result = canSitTogether(seatingChart, indexDiff, valueDiff);
-        System.out.println("Can two friends sit together? " + result);
+        int[] nums2 = {1, 5, 9, 13};
+        int indexDiff2 = 2;
+        int valueDiff2 = 3;
+        System.out.println(canSitTogether(nums2, indexDiff2, valueDiff2)); // Output: false
+
+        int[] nums3 = {4, 6, 8, 10};
+        int indexDiff3 = 1;
+        int valueDiff3 = 2;
+        System.out.println(canSitTogether(nums3, indexDiff3, valueDiff3)); // Output: true
     }
 }
 
+//as it is asked in the question and for three different conditions
+// we got the output
+//true
+//false
+//true

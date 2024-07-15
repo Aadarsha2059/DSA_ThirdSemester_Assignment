@@ -1,97 +1,102 @@
+//question number 5 solutions.....
+
 package org.example;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Random;
 
 public class TSPHillClimbing {
 
-    // Define the number of cities and the distance matrix
-    private static final int NUM_CITIES = 5;
-    private int[][] distanceMatrix;
+    private static final Random random = new Random();
 
-    // Constructor to initialize the distance matrix
-    public TSPHillClimbing(int[][] distances) {
-        if (distances.length != NUM_CITIES || distances[0].length != NUM_CITIES) {
-            throw new IllegalArgumentException("Invalid distance matrix dimensions.");
+    // Generate a random initial tour
+    private static int[] generateInitialTour(int n) {
+        int[] tour = new int[n];
+        for (int i = 0; i < n; i++) {
+            tour[i] = i;
         }
-        this.distanceMatrix = distances;
-    }
-
-    // Method to perform the Hill Climbing optimization for TSP
-    public List<Integer> solveTSP() {
-        // Start with a random initial tour
-        List<Integer> currentTour = generateRandomTour();
-        int currentDistance = calculateTourDistance(currentTour);
-
-        boolean improved;
-        do {
-            improved = false;
-
-            // Generate all possible neighboring tours by swapping cities
-            for (int i = 0; i < NUM_CITIES - 1; i++) {
-                for (int j = i + 1; j < NUM_CITIES; j++) {
-                    // Create a new tour by swapping cities i and j
-                    List<Integer> neighborTour = new ArrayList<>(currentTour);
-                    Collections.swap(neighborTour, i, j);
-
-                    // Calculate the distance of the new tour
-                    int neighborDistance = calculateTourDistance(neighborTour);
-
-                    // If the new tour is shorter, accept it
-                    if (neighborDistance < currentDistance) {
-                        currentTour = neighborTour;
-                        currentDistance = neighborDistance;
-                        improved = true;
-                    }
-                }
-            }
-        } while (improved);
-
-        return currentTour;
-    }
-
-    // Method to generate a random initial tour
-    private List<Integer> generateRandomTour() {
-        List<Integer> tour = new ArrayList<>();
-        for (int i = 0; i < NUM_CITIES; i++) {
-            tour.add(i);
+        // Shuffle the array to get a random tour
+        for (int i = 0; i < n; i++) {
+            int randomIndex = random.nextInt(n);
+            int temp = tour[i];
+            tour[i] = tour[randomIndex];
+            tour[randomIndex] = temp;
         }
-        Collections.shuffle(tour);
         return tour;
     }
 
-    // Method to calculate the total distance of a tour
-    private int calculateTourDistance(List<Integer> tour) {
-        int totalDistance = 0;
-        for (int i = 0; i < tour.size() - 1; i++) {
-            int city1 = tour.get(i);
-            int city2 = tour.get(i + 1);
-            totalDistance += distanceMatrix[city1][city2];
+    // Calculate the total distance of a tour
+    private static double calculateTourDistance(int[] tour, double[][] distanceMatrix) {
+        double totalDistance = 0;
+        for (int i = 0; i < tour.length - 1; i++) {
+            totalDistance += distanceMatrix[tour[i]][tour[i + 1]];
         }
-        // Add distance back to the starting city
-        int lastCity = tour.get(tour.size() - 1);
-        int firstCity = tour.get(0);
-        totalDistance += distanceMatrix[lastCity][firstCity];
+        totalDistance += distanceMatrix[tour[tour.length - 1]][tour[0]]; // Return to start
         return totalDistance;
     }
 
+    // Generate a neighboring solution by swapping two cities
+    private static int[] generateNeighbor(int[] tour) {
+        int n = tour.length;
+        int[] newTour = Arrays.copyOf(tour, n);
+        int i = random.nextInt(n);
+        int j = random.nextInt(n);
+        // Swap two cities
+        int temp = newTour[i];
+        newTour[i] = newTour[j];
+        newTour[j] = temp;
+        return newTour;
+    }
+
+    // Hill Climbing algorithm for TSP
+    private static int[] hillClimbing(double[][] distanceMatrix) {
+        int n = distanceMatrix.length;
+        int[] currentTour = generateInitialTour(n);
+        double currentDistance = calculateTourDistance(currentTour, distanceMatrix);
+
+        boolean improvement = true;
+        while (improvement) {
+            improvement = false;
+            int[] newTour = generateNeighbor(currentTour);
+            double newDistance = calculateTourDistance(newTour, distanceMatrix);
+            if (newDistance < currentDistance) {
+                currentTour = newTour;
+                currentDistance = newDistance;
+                improvement = true;
+            }
+        }
+        return currentTour;
+    }
+
+    // Example usage
     public static void main(String[] args) {
-        // Example distance matrix for 5 cities
-        int[][] distances = {
-                {0, 10, 15, 20, 25},
-                {10, 0, 35, 25, 30},
-                {15, 35, 0, 30, 20},
-                {20, 25, 30, 0, 10},
-                {25, 30, 20, 10, 0}
+        // Example 1: 4 cities with specified distances
+        double[][] distanceMatrix1 = {
+                {0, 10, 15, 20},
+                {10, 0, 35, 25},
+                {15, 35, 0, 30},
+                {20, 25, 30, 0}
         };
+        int[] bestTour1 = hillClimbing(distanceMatrix1);
+        System.out.println("Best tour for example 1: " + Arrays.toString(bestTour1));
+        System.out.println("Tour distance: " + calculateTourDistance(bestTour1, distanceMatrix1));
 
-        TSPHillClimbing tspSolver = new TSPHillClimbing(distances);
-        List<Integer> solution = tspSolver.solveTSP();
-
-        System.out.println("Optimal Tour: " + solution);
-        System.out.println("Optimal Distance: " + tspSolver.calculateTourDistance(solution));
+        // Example 2: 5 cities with specified distances
+        double[][] distanceMatrix2 = {
+                {0, 2, 9, 10, 7},
+                {1, 0, 6, 4, 3},
+                {15, 7, 0, 8, 5},
+                {6, 3, 12, 0, 11},
+                {9, 14, 5, 4, 0}
+        };
+        int[] bestTour2 = hillClimbing(distanceMatrix2);
+        System.out.println("Best tour for example 2: " + Arrays.toString(bestTour2));
+        System.out.println("Tour distance: " + calculateTourDistance(bestTour2, distanceMatrix2));
     }
 }
 
-//from the above solutions we can get
-//Optimal Tour: [4, 2, 0, 1, 3]
-//Optimal Distance: 80
+// for the given condition in the question and executing above codes we obtained
+//Best tour for example 1: [3, 1, 0, 2]
+//Tour distance: 80.0
+//Best tour for example 2: [1, 0, 4, 3, 2]
+//Tour distance: 31.0

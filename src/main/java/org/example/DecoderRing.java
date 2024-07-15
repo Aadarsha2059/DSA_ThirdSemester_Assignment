@@ -1,3 +1,5 @@
+//Question 1 b solutions
+
 package org.example;
 
 import java.util.Scanner;
@@ -111,3 +113,6 @@ public class DecoderRing {
 //Output
 
 //Deciphered message: "Jeklo Aadarsha"
+
+//Input: hello
+//Deciphered message: "jglko"

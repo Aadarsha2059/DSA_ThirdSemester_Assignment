@@ -1,9 +1,6 @@
-
-//Question 4 B solutions ...
+//Question number 4 b solutions
 
 package org.example;
-
-
 
 public class LargestMagicalGrove {
 
@@ -15,6 +12,7 @@ public class LargestMagicalGrove {
         TreeNode(int x) { val = x; }
     }
 
+    // Helper class to store results from the subtree checks
     static class Result {
         boolean isBST;
         int sum;
@@ -29,6 +27,7 @@ public class LargestMagicalGrove {
         }
     }
 
+    // Variable to keep track of the maximum sum of a BST subtree
     private static int maxSum = 0;
 
     public static void main(String[] args) {
@@ -47,31 +46,38 @@ public class LargestMagicalGrove {
         System.out.println(result); // Output: 20
     }
 
+    // Main function to find the largest magical grove (largest BST subtree)
     public static int findLargestMagicalGrove(TreeNode root) {
-        maxSum = 0;
-        postOrderTraversal(root);
-        return maxSum;
+        maxSum = 0; // Reset maxSum for fresh computation
+        postOrderTraversal(root); // Start the post-order traversal
+        return maxSum; // Return the maximum sum found
     }
 
+    // Helper function to perform post-order traversal and check for BST properties
     private static Result postOrderTraversal(TreeNode node) {
         if (node == null) {
+            // Base case: if the node is null, it is a valid BST with sum 0
             return new Result(true, 0, Integer.MAX_VALUE, Integer.MIN_VALUE);
         }
 
+        // Recursively check the left and right subtrees
         Result left = postOrderTraversal(node.left);
         Result right = postOrderTraversal(node.right);
 
+        // Check if the current node forms a BST with its left and right subtrees
         if (left.isBST && right.isBST && node.val > left.max && node.val < right.min) {
+            // Calculate the sum of the current BST subtree
             int currentSum = node.val + left.sum + right.sum;
+            // Update the maximum sum found so far
             maxSum = Math.max(maxSum, currentSum);
+            // Determine the minimum and maximum values in the current BST subtree
             int currentMin = Math.min(node.val, left.min);
             int currentMax = Math.max(node.val, right.max);
+            // Return a new Result indicating this subtree is a valid BST
             return new Result(true, currentSum, currentMin, currentMax);
         } else {
+            // If the current node doesn't form a valid BST with its subtrees, return false
             return new Result(false, 0, 0, 0);
         }
     }
 }
-
-//Executing the above conditions in the asked question I observed output
-//20
