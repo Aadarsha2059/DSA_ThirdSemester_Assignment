@@ -1,3 +1,5 @@
+//Question number 1 a solutions..
+
 package org.example;
 
 import java.util.*;
