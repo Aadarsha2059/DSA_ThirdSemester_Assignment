@@ -1,4 +1,4 @@
-//Question number 7 solutions...
+//question number 7 solutions...
 
 package org.example;
 
@@ -84,6 +84,8 @@ public class RouteOptimizationGUI extends JFrame {
 
             // Update route visualization panel
             routePanel.setRoute(optimizedRoute);
+            routePanel.setNodes(getCityPoints());
+            routePanel.setConnections(getCityConnections(deliveryPoints));
         }
     }
 
@@ -113,6 +115,28 @@ public class RouteOptimizationGUI extends JFrame {
         return optimizedRoute;
     }
 
+    private List<Point> getCityPoints() {
+        // Create points for each city
+        List<Point> cities = new ArrayList<>();
+        cities.add(new Point("Pokhara", 100, 100));
+        cities.add(new Point("Kathmandu", 300, 200));
+        cities.add(new Point("Lalbandi", 200, 300));
+        cities.add(new Point("Biratnagar", 400, 400));
+        cities.add(new Point("Nepalgunj", 500, 100));
+        return cities;
+    }
+
+    private List<Connection> getCityConnections(List<String> deliveryPoints) {
+        // Define connections between cities based on input delivery points
+        List<Connection> connections = new ArrayList<>();
+        for (int i = 0; i < deliveryPoints.size(); i++) {
+            String city1 = deliveryPoints.get(i);
+            String city2 = deliveryPoints.get((i + 1) % deliveryPoints.size()); // Wrap around to the first city
+            connections.add(new Connection(city1, city2));
+        }
+        return connections;
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             RouteOptimizationGUI gui = new RouteOptimizationGUI();
@@ -123,15 +147,45 @@ public class RouteOptimizationGUI extends JFrame {
 
 class RouteVisualizationPanel extends JPanel {
     private List<Point> route;
+    private List<Point> nodes;
+    private List<Connection> connections;
 
     public void setRoute(List<Point> route) {
         this.route = route;
         repaint();
     }
 
+    public void setNodes(List<Point> nodes) {
+        this.nodes = nodes;
+        repaint();
+    }
+
+    public void setConnections(List<Connection> connections) {
+        this.connections = connections;
+        repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+
+        if (nodes != null) {
+            for (Point node : nodes) {
+                g.setColor(Color.RED);
+                g.fillOval(node.x - 5, node.y - 5, 10, 10);
+                g.setColor(Color.BLACK);
+                g.drawString(node.name, node.x + 10, node.y);
+            }
+        }
+
+        if (connections != null) {
+            g.setColor(Color.GRAY);
+            for (Connection connection : connections) {
+                Point city1 = findPointByName(connection.city1);
+                Point city2 = findPointByName(connection.city2);
+                g.drawLine(city1.x, city1.y, city2.x, city2.y);
+            }
+        }
 
         if (route != null) {
             g.setColor(Color.BLUE);
@@ -147,38 +201,41 @@ class RouteVisualizationPanel extends JPanel {
             }
         }
     }
+
+    private Point findPointByName(String cityName) {
+        for (Point node : nodes) {
+            if (node.name.equals(cityName)) {
+                return node;
+            }
+        }
+        return null;
+    }
 }
 
 class Point {
     int x, y;
+    String name;
 
-    public Point(String cityName) {
-        switch (cityName) {
-            case "Pokhara":
-                x = 100;
-                y = 100;
-                break;
-            case "Kathmandu":
-                x = 300;
-                y = 200;
-                break;
-            case "Lalbandi":
-                x = 200;
-                y = 300;
-                break;
-            case "Biratnagar":
-                x = 400;
-                y = 400;
-                break;
-            case "Nepalgunj":
-                x = 500;
-                y = 100;
-                break;
-            default:
-                x = 0;
-                y = 0;
-                break;
-        }
+    public Point(String name, int x, int y) {
+        this.name = name;
+        this.x = x;
+        this.y = y;
+    }
+
+    public Point(String point) {
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }
 
+class Connection {
+    String city1, city2;
+
+    public Connection(String city1, String city2) {
+        this.city1 = city1;
+        this.city2 = city2;
+    }
+}

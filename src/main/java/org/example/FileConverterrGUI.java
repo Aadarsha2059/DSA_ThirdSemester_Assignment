@@ -1,4 +1,4 @@
-//Question number 6 solutions...
+// question number 6 solutions...
 
 package org.example;
 
@@ -19,10 +19,11 @@ public class FileConverterrGUI extends JFrame {
     private JFileChooser fileChooser;
     private ExecutorService executorService;
     private SwingWorker<Void, ConversionTask> currentWorker;
+    private GraphPanel graphPanel; // New component for displaying graph
 
     public FileConverterrGUI() {
-        setTitle("File Converter");
-        setSize(600, 400);
+        setTitle("File Converter & Route Optimization");
+        setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
@@ -42,6 +43,10 @@ public class FileConverterrGUI extends JFrame {
         fileChooser = new JFileChooser();
         fileChooser.setMultiSelectionEnabled(true);
         fileChooser.setFileFilter(new FileNameExtensionFilter("Files", "pdf", "jpg", "png"));
+
+        // Graph panel for displaying delivery points and optimized routes
+        graphPanel = new GraphPanel();
+        graphPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
         // Top panel for file selection
         JPanel topPanel = new JPanel();
@@ -64,10 +69,16 @@ public class FileConverterrGUI extends JFrame {
         controlPanel.add(cancelButton);
         bottomPanel.add(controlPanel, BorderLayout.SOUTH);
 
+        // Right panel for graph display
+        JPanel rightPanel = new JPanel();
+        rightPanel.setLayout(new BorderLayout());
+        rightPanel.add(new JScrollPane(graphPanel), BorderLayout.CENTER);
+
         // Add panels to the frame
         add(topPanel, BorderLayout.NORTH);
         add(middlePanel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
+        add(rightPanel, BorderLayout.EAST);
 
         // Event listeners
         selectFileButton.addActionListener(e -> selectFiles());
@@ -86,6 +97,9 @@ public class FileConverterrGUI extends JFrame {
                 fileNames.append(file.getAbsolutePath()).append("; ");
             }
             fileTextField.setText(fileNames.toString());
+
+            // Simulate adding delivery points to the graph
+            graphPanel.setDeliveryPoints(new String[]{"Pokhara", "Kathmandu", "Lalbandi", "Biratnagar", "Nepalgunj"});
         }
     }
 
@@ -210,6 +224,55 @@ public class FileConverterrGUI extends JFrame {
         }
 
         public void get() {
+        }
+    }
+
+    // Panel for displaying graph (delivery points and routes)
+    private static class GraphPanel extends JPanel {
+        private String[] deliveryPoints;
+
+        public GraphPanel() {
+            setPreferredSize(new Dimension(300, 300));
+        }
+
+        public void setDeliveryPoints(String[] deliveryPoints) {
+            this.deliveryPoints = deliveryPoints;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (deliveryPoints != null) {
+                int centerX = getWidth() / 2;
+                int centerY = getHeight() / 2;
+                int radius = 100;
+                int numPoints = deliveryPoints.length;
+                double angleIncrement = 2 * Math.PI / numPoints;
+
+                // Draw delivery points as nodes
+                for (int i = 0; i < numPoints; i++) {
+                    double angle = i * angleIncrement;
+                    int x = centerX + (int) (radius * Math.cos(angle));
+                    int y = centerY + (int) (radius * Math.sin(angle));
+                    g.setColor(Color.BLUE);
+                    g.fillOval(x - 10, y - 10, 20, 20);
+                    g.setColor(Color.BLACK);
+                    g.drawString(deliveryPoints[i], x - 10, y - 15);
+                }
+
+                // Draw routes (for demonstration purposes, routes are not optimized in this example)
+                g.setColor(Color.RED);
+                for (int i = 0; i < numPoints - 1; i++) {
+                    double angle1 = i * angleIncrement;
+                    double angle2 = (i + 1) * angleIncrement;
+                    int x1 = centerX + (int) (radius * Math.cos(angle1));
+                    int y1 = centerY + (int) (radius * Math.sin(angle1));
+                    int x2 = centerX + (int) (radius * Math.cos(angle2));
+                    int y2 = centerY + (int) (radius * Math.sin(angle2));
+                    g.drawLine(x1, y1, x2, y2);
+                }
+            }
         }
     }
 }
