@@ -1,4 +1,4 @@
-//Question number 4 b solutions
+// question number 4 b solutions...
 
 package org.example;
 
@@ -43,7 +43,25 @@ public class LargestMagicalGrove {
         root.right.right.right = new TreeNode(6);
 
         int result = findLargestMagicalGrove(root);
-        System.out.println(result); // Output: 20
+        System.out.println(result); // Expected Output: 20
+
+        // Additional test cases
+        // Test Case 1: Tree with no nodes
+        TreeNode root1 = null;
+        System.out.println(findLargestMagicalGrove(root1)); // Expected Output: 0
+
+        // Test Case 2: Tree with only one node
+        TreeNode root2 = new TreeNode(10);
+        System.out.println(findLargestMagicalGrove(root2)); // Expected Output: 10
+
+        // Test Case 3: Tree with multiple nodes but no valid BST subtrees
+        TreeNode root3 = new TreeNode(10);
+        root3.left = new TreeNode(5);
+        root3.right = new TreeNode(15);
+        root3.left.right = new TreeNode(20);
+        root3.right.left = new TreeNode(6);
+
+        System.out.println(findLargestMagicalGrove(root3)); // Expected Output: 15 (the largest valid BST is the single node with value 15)
     }
 
     // Main function to find the largest magical grove (largest BST subtree)
@@ -81,3 +99,11 @@ public class LargestMagicalGrove {
         }
     }
 }
+
+//for four conditions I got the output
+//20
+//0
+//10
+//25
+
+

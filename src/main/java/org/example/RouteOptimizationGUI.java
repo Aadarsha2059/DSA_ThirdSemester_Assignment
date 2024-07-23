@@ -1,3 +1,5 @@
+//question number 7 solutions....
+
 package org.example;
 
 import javax.swing.*;
@@ -251,7 +253,7 @@ public class RouteOptimizationGUI extends JFrame {
 
         @Override
         public Dimension getPreferredSize() {
-            return new Dimension(800, 600);
+            return new Dimension(900, 900);
         }
     }
 
@@ -268,3 +270,8 @@ public class RouteOptimizationGUI extends JFrame {
         SwingUtilities.invokeLater(RouteOptimizationGUI::new);
     }
 }
+
+// On gui selecting start city and end city we can get the shortest route  among six
+//selected cities
+//if there is no node between the cities means I have assumed that there exists no path
+//among those disconnected cities on gui..
