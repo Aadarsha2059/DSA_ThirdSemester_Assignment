@@ -1,4 +1,4 @@
-// question number 2 a solutions
+//2 a solutions...
 
 package org.example;
 
@@ -11,42 +11,86 @@ import java.util.Stack;
 public class BasicCalculatorGUI extends JFrame {
 
     private JTextField inputField;
-    private JButton calculateButton;
+    private JButton[] buttons;
     private JLabel resultLabel;
 
     public BasicCalculatorGUI() {
         // Set up the frame
         setTitle("Basic Calculator");
-        setSize(400, 200);
+        setSize(300, 400); // Adjusted size for better calculator layout
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new GridLayout(3, 1));
+        setLayout(new BorderLayout());
 
         // Input field
         inputField = new JTextField();
-        add(inputField);
+        inputField.setFont(new Font("Arial", Font.PLAIN, 24));
+        inputField.setHorizontalAlignment(JTextField.RIGHT);
+        inputField.setEditable(false); // Disable direct input
+        add(inputField, BorderLayout.NORTH);
 
-        // Calculate button
-        calculateButton = new JButton("Calculate");
-        calculateButton.addActionListener(new CalculateButtonListener());
-        add(calculateButton);
+        // Button panel
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new GridLayout(5, 4, 5, 5)); // Rows, Columns, Horizontal Gap, Vertical Gap
+        buttons = new JButton[20]; // Array for 20 buttons (0-9, +, -, *, /, =, C, (, ))
+
+        // Button labels
+        String[] buttonLabels = {
+                "7", "8", "9", "/",
+                "4", "5", "6", "*",
+                "1", "2", "3", "-",
+                "0", "(", ")", "+",
+                "C", "=", ".", " "
+        };
+
+        // Add buttons to panel with color decorations
+        for (int i = 0; i < 20; i++) {
+            buttons[i] = new JButton(buttonLabels[i]);
+            buttons[i].setFont(new Font("Arial", Font.BOLD, 18));
+            buttons[i].setFocusPainted(false); // Remove focus border
+
+            // Set colors for digits and operators
+            if (buttonLabels[i].matches("[0-9]")) {
+                buttons[i].setForeground(Color.BLUE);
+            } else if (buttonLabels[i].matches("[+\\-*/()]")) {
+                buttons[i].setForeground(Color.RED);
+            }
+
+            buttons[i].addActionListener(new ButtonClickListener());
+            buttonPanel.add(buttons[i]);
+        }
+
+        // Add button panel to center
+        add(buttonPanel, BorderLayout.CENTER);
 
         // Result label
         resultLabel = new JLabel("Result: ");
-        add(resultLabel);
+        resultLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        resultLabel.setHorizontalAlignment(JLabel.RIGHT);
+        add(resultLabel, BorderLayout.SOUTH);
 
         // Make the frame visible
         setVisible(true);
     }
 
-    private class CalculateButtonListener implements ActionListener {
+    private class ButtonClickListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            String expression = inputField.getText();
-            try {
-                int result = evaluate(expression);
-                resultLabel.setText("Result: " + result);
-            } catch (Exception ex) {
-                resultLabel.setText("Error: Invalid Expression");
+            JButton button = (JButton) e.getSource();
+            String buttonText = button.getText();
+
+            if (buttonText.equals("=")) {
+                String expression = inputField.getText();
+                try {
+                    int result = evaluate(expression);
+                    resultLabel.setText("Result: " + result);
+                } catch (Exception ex) {
+                    resultLabel.setText("Error: Invalid Expression");
+                }
+            } else if (buttonText.equals("C")) {
+                inputField.setText("");
+                resultLabel.setText("Result: ");
+            } else {
+                inputField.setText(inputField.getText() + buttonText);
             }
         }
     }
@@ -110,9 +154,8 @@ public class BasicCalculatorGUI extends JFrame {
     }
 }
 
+// 2+2+2+2
+//output=8
 
-//input (1+(4+5+2)-3)+(6+11)
-//output: 26
-
-//(1+(4+50+2)-3)+(6+11) as input
-// output:71
+// 1/0
+//output=Invalid expression

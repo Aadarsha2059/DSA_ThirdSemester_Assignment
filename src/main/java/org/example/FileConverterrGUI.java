@@ -1,5 +1,3 @@
-// question number 6 solutions...
-
 package org.example;
 
 import javax.swing.*;
@@ -19,16 +17,16 @@ public class FileConverterrGUI extends JFrame {
     private JFileChooser fileChooser;
     private ExecutorService executorService;
     private SwingWorker<Void, ConversionTask> currentWorker;
-    private GraphPanel graphPanel; // New component for displaying graph
+    private JPanel resultPanel;
+    private DefaultListModel<File> fileListModel;
 
     public FileConverterrGUI() {
-        setTitle("File Converter & Route Optimization");
+        setTitle("File Converter");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // Initialize components
         fileTextField = new JTextField();
         fileTextField.setEditable(false);
         JButton selectFileButton = new JButton("Select Files");
@@ -44,23 +42,23 @@ public class FileConverterrGUI extends JFrame {
         fileChooser.setMultiSelectionEnabled(true);
         fileChooser.setFileFilter(new FileNameExtensionFilter("Files", "pdf", "jpg", "png"));
 
-        // Graph panel for displaying delivery points and optimized routes
-        graphPanel = new GraphPanel();
-        graphPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        resultPanel = new JPanel();
+        resultPanel.setLayout(new BoxLayout(resultPanel, BoxLayout.Y_AXIS));
 
-        // Top panel for file selection
+        fileListModel = new DefaultListModel<>();
+        JList<File> fileList = new JList<>(fileListModel);
+        fileList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout());
-        topPanel.add(fileTextField, BorderLayout.CENTER);
-        topPanel.add(selectFileButton, BorderLayout.EAST);
+        topPanel.add(new JScrollPane(fileList), BorderLayout.CENTER);
+        topPanel.add(selectFileButton, BorderLayout.SOUTH);
 
-        // Middle panel for conversion options and progress
         JPanel middlePanel = new JPanel();
         middlePanel.setLayout(new BorderLayout());
         middlePanel.add(conversionTypeComboBox, BorderLayout.NORTH);
         middlePanel.add(progressBar, BorderLayout.CENTER);
 
-        // Bottom panel for status and control buttons
         JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new BorderLayout());
         bottomPanel.add(new JScrollPane(statusTextArea), BorderLayout.CENTER);
@@ -69,45 +67,37 @@ public class FileConverterrGUI extends JFrame {
         controlPanel.add(cancelButton);
         bottomPanel.add(controlPanel, BorderLayout.SOUTH);
 
-        // Right panel for graph display
-        JPanel rightPanel = new JPanel();
-        rightPanel.setLayout(new BorderLayout());
-        rightPanel.add(new JScrollPane(graphPanel), BorderLayout.CENTER);
-
-        // Add panels to the frame
         add(topPanel, BorderLayout.NORTH);
         add(middlePanel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
-        add(rightPanel, BorderLayout.EAST);
+        add(new JScrollPane(resultPanel), BorderLayout.EAST);
 
-        // Event listeners
         selectFileButton.addActionListener(e -> selectFiles());
         startButton.addActionListener(e -> startConversion());
         cancelButton.addActionListener(e -> cancelConversion());
 
-        // Executor service for managing threads
         executorService = Executors.newFixedThreadPool(4);
     }
 
     private void selectFiles() {
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File[] selectedFiles = fileChooser.getSelectedFiles();
-            StringBuilder fileNames = new StringBuilder();
+            fileListModel.clear();
             for (File file : selectedFiles) {
-                fileNames.append(file.getAbsolutePath()).append("; ");
+                fileListModel.addElement(file);
             }
-            fileTextField.setText(fileNames.toString());
-
-            // Simulate adding delivery points to the graph
-            graphPanel.setDeliveryPoints(new String[]{"Pokhara", "Kathmandu", "Lalbandi", "Biratnagar", "Nepalgunj"});
         }
     }
 
     private void startConversion() {
-        File[] selectedFiles = fileChooser.getSelectedFiles();
-        if (selectedFiles.length == 0) {
+        if (fileListModel.getSize() == 0) {
             JOptionPane.showMessageDialog(this, "No files selected!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
+        }
+
+        File[] selectedFiles = new File[fileListModel.getSize()];
+        for (int i = 0; i < fileListModel.getSize(); i++) {
+            selectedFiles[i] = fileListModel.get(i);
         }
 
         String conversionType = (String) conversionTypeComboBox.getSelectedItem();
@@ -116,7 +106,9 @@ public class FileConverterrGUI extends JFrame {
         startButton.setEnabled(false);
         cancelButton.setEnabled(true);
 
-        currentWorker = new SwingWorker<Void, ConversionTask>() {
+        resultPanel.removeAll();
+
+        currentWorker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() {
                 int totalFiles = selectedFiles.length;
@@ -143,6 +135,7 @@ public class FileConverterrGUI extends JFrame {
                 for (ConversionTask task : chunks) {
                     if (task.getError() == null) {
                         statusTextArea.append("Converted: " + task.getFile().getName() + " (" + task.getType() + ")\n");
+                        addResult(task.getFile());
                     } else {
                         statusTextArea.append("Failed: " + task.getFile().getName() + " (" + task.getType() + ") - " + task.getError().getMessage() + "\n");
                     }
@@ -176,14 +169,20 @@ public class FileConverterrGUI extends JFrame {
         }
     }
 
+    private void addResult(File file) {
+        JLabel resultLabel = new JLabel("Converted File: " + file.getName());
+        resultPanel.add(resultLabel);
+        resultPanel.revalidate();
+        resultPanel.repaint();
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            FileConverterrGUI converterGUI = new FileConverterrGUI();
+            FileConverterGUI converterGUI = new FileConverterGUI();
             converterGUI.setVisible(true);
         });
     }
 
-    // Class to handle individual file conversion
     private static class ConversionTask implements Runnable {
         private final File file;
         private final String type;
@@ -215,64 +214,14 @@ public class FileConverterrGUI extends JFrame {
         @Override
         public void run() {
             try {
-                // Simulate file conversion
-                Thread.sleep(2000); // Simulating delay
-                // Add actual file conversion logic here
+                Thread.sleep(2000);
+                // Implement actual conversion logic here
             } catch (InterruptedException e) {
                 error = e;
             }
         }
 
         public void get() {
-        }
-    }
-
-    // Panel for displaying graph (delivery points and routes)
-    private static class GraphPanel extends JPanel {
-        private String[] deliveryPoints;
-
-        public GraphPanel() {
-            setPreferredSize(new Dimension(300, 300));
-        }
-
-        public void setDeliveryPoints(String[] deliveryPoints) {
-            this.deliveryPoints = deliveryPoints;
-            repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (deliveryPoints != null) {
-                int centerX = getWidth() / 2;
-                int centerY = getHeight() / 2;
-                int radius = 100;
-                int numPoints = deliveryPoints.length;
-                double angleIncrement = 2 * Math.PI / numPoints;
-
-                // Draw delivery points as nodes
-                for (int i = 0; i < numPoints; i++) {
-                    double angle = i * angleIncrement;
-                    int x = centerX + (int) (radius * Math.cos(angle));
-                    int y = centerY + (int) (radius * Math.sin(angle));
-                    g.setColor(Color.BLUE);
-                    g.fillOval(x - 10, y - 10, 20, 20);
-                    g.setColor(Color.BLACK);
-                    g.drawString(deliveryPoints[i], x - 10, y - 15);
-                }
-
-                // Draw routes (for demonstration purposes, routes are not optimized in this example)
-                g.setColor(Color.RED);
-                for (int i = 0; i < numPoints - 1; i++) {
-                    double angle1 = i * angleIncrement;
-                    double angle2 = (i + 1) * angleIncrement;
-                    int x1 = centerX + (int) (radius * Math.cos(angle1));
-                    int y1 = centerY + (int) (radius * Math.sin(angle1));
-                    int x2 = centerX + (int) (radius * Math.cos(angle2));
-                    int y2 = centerY + (int) (radius * Math.sin(angle2));
-                    g.drawLine(x1, y1, x2, y2);
-                }
-            }
         }
     }
 }
