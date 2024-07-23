@@ -1,241 +1,270 @@
-//question number 7 solutions...
-
 package org.example;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
 
 public class RouteOptimizationGUI extends JFrame {
-    private JTextField deliveryPointsField;
-    private JTextField vehicleCapacityField;
-    private JComboBox<String> algorithmComboBox;
-    private JButton optimizeButton;
-    private RouteVisualizationPanel routePanel;
+
+    private Map<String, Point> cityPositions;
+    private Map<String, Integer> cityIndexMap;
+    private int[][] distances;
+
+    private String startCity;
+    private String endCity;
+
+    private List<Integer> shortestPath;
 
     public RouteOptimizationGUI() {
         setTitle("Route Optimization for Delivery Service");
-        setSize(800, 600);
+        setSize(1000, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Components initialization
-        JPanel inputPanel = new JPanel(new GridLayout(4, 2, 10, 10));
-        inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Initialize cities and distances
+        initializeCitiesAndDistances();
 
-        JLabel deliveryLabel = new JLabel("Delivery Points (comma-separated): ");
-        deliveryPointsField = new JTextField();
-        JLabel vehicleLabel = new JLabel("Vehicle Capacity: ");
-        vehicleCapacityField = new JTextField();
-        JLabel algorithmLabel = new JLabel("Algorithm: ");
-        algorithmComboBox = new JComboBox<>(new String[]{"Nearest Neighbor", "Other Algorithms"});
-        optimizeButton = new JButton("Optimize");
-        optimizeButton.addActionListener(new OptimizeButtonListener());
+        // Main layout
+        setLayout(new BorderLayout(10, 10));
 
-        inputPanel.add(deliveryLabel);
-        inputPanel.add(deliveryPointsField);
-        inputPanel.add(vehicleLabel);
-        inputPanel.add(vehicleCapacityField);
-        inputPanel.add(algorithmLabel);
-        inputPanel.add(algorithmComboBox);
+        // Draw panel for graph visualization
+        GraphPanel graphPanel = new GraphPanel();
+        add(graphPanel, BorderLayout.CENTER);
+
+        // Panel for displaying shortest path
+        JPanel pathPanel = new JPanel(new BorderLayout());
+        pathPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        pathPanel.setBackground(Color.LIGHT_GRAY);
+
+        JLabel pathLabel = new JLabel("Shortest Path will be displayed here");
+        pathLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        pathLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        pathPanel.add(pathLabel, BorderLayout.CENTER);
+        add(pathPanel, BorderLayout.EAST);
+
+        // Input panel for selecting start and end points
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+
+        JLabel startLabel = new JLabel("Start City:");
+        startLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        inputPanel.add(startLabel);
+
+        JComboBox<String> startComboBox = new JComboBox<>(cityIndexMap.keySet().toArray(new String[0]));
+        startComboBox.addActionListener(e -> {
+            startCity = (String) startComboBox.getSelectedItem();
+            graphPanel.repaint();
+        });
+        startComboBox.setToolTipText("Select the starting city");
+        inputPanel.add(startComboBox);
+
+        JLabel endLabel = new JLabel("End City:");
+        endLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        inputPanel.add(endLabel);
+
+        JComboBox<String> endComboBox = new JComboBox<>(cityIndexMap.keySet().toArray(new String[0]));
+        endComboBox.addActionListener(e -> {
+            endCity = (String) endComboBox.getSelectedItem();
+            graphPanel.repaint();
+        });
+        endComboBox.setToolTipText("Select the ending city");
+        inputPanel.add(endComboBox);
+
+        JButton optimizeButton = new JButton("Optimize Route");
+        optimizeButton.addActionListener(e -> {
+            if (startCity != null && endCity != null && !startCity.equals(endCity)) {
+                findShortestPath(startCity, endCity);
+                pathLabel.setText("Shortest Path: " + shortestPathToString());
+                graphPanel.repaint();
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select different start and end cities.");
+            }
+        });
+        optimizeButton.setFont(new Font("Arial", Font.BOLD, 14));
         inputPanel.add(optimizeButton);
 
-        routePanel = new RouteVisualizationPanel();
+        add(inputPanel, BorderLayout.SOUTH);
 
-        // Layout setup
-        setLayout(new BorderLayout());
-        add(inputPanel, BorderLayout.NORTH);
-        add(routePanel, BorderLayout.CENTER);
+        setVisible(true);
     }
 
-    private class OptimizeButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            String deliveryPointsText = deliveryPointsField.getText().trim();
-            String vehicleCapacityText = vehicleCapacityField.getText().trim();
-            String algorithm = (String) algorithmComboBox.getSelectedItem();
+    private void initializeCitiesAndDistances() {
+        // Initialize city positions (for graphical representation)
+        cityPositions = new HashMap<>();
+        cityPositions.put("Kathmandu", new Point(200, 100));
+        cityPositions.put("Pokhara", new Point(100, 300));
+        cityPositions.put("Dhankuta", new Point(400, 150));
+        cityPositions.put("Sarlahi", new Point(300, 400));
+        cityPositions.put("Kanchanpur", new Point(500, 300));
+        cityPositions.put("Nepalgunj", new Point(600, 200));
 
-            // Parse delivery points
-            List<String> deliveryPoints = parseDeliveryPoints(deliveryPointsText);
-            if (deliveryPoints.isEmpty()) {
-                JOptionPane.showMessageDialog(RouteOptimizationGUI.this,
-                        "Please enter valid delivery points.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+        // Initialize cities and their indices
+        String[] cities = {"Kathmandu", "Pokhara", "Dhankuta", "Sarlahi", "Kanchanpur", "Nepalgunj"};
+        cityIndexMap = new HashMap<>();
+        for (int i = 0; i < cities.length; i++) {
+            cityIndexMap.put(cities[i], i);
+        }
 
-            // Parse vehicle capacity
-            int vehicleCapacity;
-            try {
-                vehicleCapacity = Integer.parseInt(vehicleCapacityText);
-                if (vehicleCapacity <= 0) {
-                    throw new NumberFormatException();
+        // Initialize distances (adjacency matrix)
+        distances = new int[cities.length][cities.length];
+        for (int i = 0; i < cities.length; i++) {
+            Arrays.fill(distances[i], Integer.MAX_VALUE);
+            distances[i][i] = 0;
+        }
+
+        // Add connections between cities
+        addConnection("Kathmandu", "Pokhara", 200);
+        addConnection("Pokhara", "Sarlahi", 50);
+        addConnection("Sarlahi", "Nepalgunj", 150);
+        addConnection("Nepalgunj", "Kanchanpur", 50);
+        addConnection("Dhankuta", "Nepalgunj", 55);
+        addConnection("Dhankuta", "Pokhara", 200);
+    }
+
+    private void addConnection(String city1, String city2, int distance) {
+        int index1 = cityIndexMap.get(city1);
+        int index2 = cityIndexMap.get(city2);
+        distances[index1][index2] = distance;
+        distances[index2][index1] = distance;
+    }
+
+    private void findShortestPath(String startCity, String endCity) {
+        int startIndex = cityIndexMap.get(startCity);
+        int endIndex = cityIndexMap.get(endCity);
+        shortestPath = dijkstra(startIndex, endIndex);
+    }
+
+    private List<Integer> dijkstra(int start, int end) {
+        int numCities = distances.length;
+        int[] minDistances = new int[numCities];
+        boolean[] visited = new boolean[numCities];
+        int[] previous = new int[numCities];
+
+        Arrays.fill(minDistances, Integer.MAX_VALUE);
+        Arrays.fill(previous, -1);
+        minDistances[start] = 0;
+
+        PriorityQueue<Integer> queue = new PriorityQueue<>(Comparator.comparingInt(i -> minDistances[i]));
+        queue.add(start);
+
+        while (!queue.isEmpty()) {
+            int u = queue.poll();
+            visited[u] = true;
+
+            for (int v = 0; v < numCities; v++) {
+                if (!visited[v] && distances[u][v] != Integer.MAX_VALUE) {
+                    int alt = minDistances[u] + distances[u][v];
+                    if (alt < minDistances[v]) {
+                        minDistances[v] = alt;
+                        previous[v] = u;
+                        queue.add(v);
+                    }
                 }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(RouteOptimizationGUI.this,
-                        "Please enter a valid vehicle capacity (a positive integer).", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            // Simulate route optimization (using a simple nearest neighbor algorithm)
-            List<Point> optimizedRoute = optimizeRoute(deliveryPoints);
-
-            // Update route visualization panel
-            routePanel.setRoute(optimizedRoute);
-            routePanel.setNodes(getCityPoints());
-            routePanel.setConnections(getCityConnections(deliveryPoints));
-        }
-    }
-
-    private List<String> parseDeliveryPoints(String input) {
-        String[] pointsArray = input.split(",");
-        List<String> pointsList = new ArrayList<>();
-        for (String point : pointsArray) {
-            String trimmedPoint = point.trim();
-            if (!trimmedPoint.isEmpty()) {
-                pointsList.add(trimmedPoint);
-            }
-        }
-        return pointsList;
-    }
-
-    private List<Point> optimizeRoute(List<String> deliveryPoints) {
-        // For simplicity, implement a basic nearest neighbor algorithm
-        List<Point> optimizedRoute = new ArrayList<>();
-        for (String point : deliveryPoints) {
-            Point p = new Point(point);
-            optimizedRoute.add(p);
-        }
-        // Add the starting point at the end to complete the loop
-        if (!optimizedRoute.isEmpty()) {
-            optimizedRoute.add(optimizedRoute.get(0));
-        }
-        return optimizedRoute;
-    }
-
-    private List<Point> getCityPoints() {
-        // Create points for each city
-        List<Point> cities = new ArrayList<>();
-        cities.add(new Point("Pokhara", 100, 100));
-        cities.add(new Point("Kathmandu", 300, 200));
-        cities.add(new Point("Lalbandi", 200, 300));
-        cities.add(new Point("Biratnagar", 400, 400));
-        cities.add(new Point("Nepalgunj", 500, 100));
-        return cities;
-    }
-
-    private List<Connection> getCityConnections(List<String> deliveryPoints) {
-        // Define connections between cities based on input delivery points
-        List<Connection> connections = new ArrayList<>();
-        for (int i = 0; i < deliveryPoints.size(); i++) {
-            String city1 = deliveryPoints.get(i);
-            String city2 = deliveryPoints.get((i + 1) % deliveryPoints.size()); // Wrap around to the first city
-            connections.add(new Connection(city1, city2));
-        }
-        return connections;
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            RouteOptimizationGUI gui = new RouteOptimizationGUI();
-            gui.setVisible(true);
-        });
-    }
-}
-
-class RouteVisualizationPanel extends JPanel {
-    private List<Point> route;
-    private List<Point> nodes;
-    private List<Connection> connections;
-
-    public void setRoute(List<Point> route) {
-        this.route = route;
-        repaint();
-    }
-
-    public void setNodes(List<Point> nodes) {
-        this.nodes = nodes;
-        repaint();
-    }
-
-    public void setConnections(List<Connection> connections) {
-        this.connections = connections;
-        repaint();
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-
-        if (nodes != null) {
-            for (Point node : nodes) {
-                g.setColor(Color.RED);
-                g.fillOval(node.x - 5, node.y - 5, 10, 10);
-                g.setColor(Color.BLACK);
-                g.drawString(node.name, node.x + 10, node.y);
             }
         }
 
-        if (connections != null) {
-            g.setColor(Color.GRAY);
-            for (Connection connection : connections) {
-                Point city1 = findPointByName(connection.city1);
-                Point city2 = findPointByName(connection.city2);
-                g.drawLine(city1.x, city1.y, city2.x, city2.y);
+        List<Integer> path = new ArrayList<>();
+        int current = end;
+        while (current != -1) {
+            path.add(current);
+            current = previous[current];
+        }
+        Collections.reverse(path);
+        return path;
+    }
+
+    private String shortestPathToString() {
+        if (shortestPath == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < shortestPath.size(); i++) {
+            sb.append(getCityName(shortestPath.get(i)));
+            if (i < shortestPath.size() - 1) {
+                sb.append(" -> ");
+            }
+        }
+        return sb.toString();
+    }
+
+    private class GraphPanel extends JPanel {
+
+        private static final int NODE_RADIUS = 20;
+        private static final Color NODE_COLOR = Color.BLUE;
+        private static final Color EDGE_COLOR = Color.BLACK;
+        private static final Color PATH_COLOR = Color.RED;
+        private static final Font EDGE_FONT = new Font("Arial", Font.PLAIN, 12);
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2d = (Graphics2D) g;
+
+            // Draw edges (connections between cities) and their distances
+            g2d.setColor(EDGE_COLOR);
+            g2d.setFont(EDGE_FONT);
+            for (int i = 0; i < distances.length; i++) {
+                for (int j = i + 1; j < distances.length; j++) {
+                    if (distances[i][j] != Integer.MAX_VALUE) {
+                        Point city1Pos = cityPositions.get(getCityName(i));
+                        Point city2Pos = cityPositions.get(getCityName(j));
+                        g2d.drawLine(city1Pos.x, city1Pos.y, city2Pos.x, city2Pos.y);
+
+                        int centerX = (city1Pos.x + city2Pos.x) / 2;
+                        int centerY = (city1Pos.y + city2Pos.y) / 2;
+
+                        String distanceLabel = String.valueOf(distances[i][j]);
+                        g2d.drawString(distanceLabel, centerX, centerY);
+                    }
+                }
+            }
+
+            // Draw nodes (cities)
+            g2d.setColor(NODE_COLOR);
+            for (String city : cityPositions.keySet()) {
+                Point cityPos = cityPositions.get(city);
+                g2d.fillOval(cityPos.x - NODE_RADIUS, cityPos.y - NODE_RADIUS, 2 * NODE_RADIUS, 2 * NODE_RADIUS);
+                g2d.drawString(city, cityPos.x - NODE_RADIUS, cityPos.y - NODE_RADIUS);
+            }
+
+            // Highlight selected start and end cities
+            if (startCity != null && endCity != null) {
+                g2d.setColor(Color.RED);
+                Point startCityPos = cityPositions.get(startCity);
+                Point endCityPos = cityPositions.get(endCity);
+                g2d.drawOval(startCityPos.x - NODE_RADIUS - 5, startCityPos.y - NODE_RADIUS - 5,
+                        2 * NODE_RADIUS + 10, 2 * NODE_RADIUS + 10);
+                g2d.drawOval(endCityPos.x - NODE_RADIUS - 5, endCityPos.y - NODE_RADIUS - 5,
+                        2 * NODE_RADIUS + 10, 2 * NODE_RADIUS + 10);
+            }
+
+            // Draw shortest path
+            if (shortestPath != null) {
+                g2d.setColor(PATH_COLOR);
+                for (int i = 0; i < shortestPath.size() - 1; i++) {
+                    Point city1Pos = cityPositions.get(getCityName(shortestPath.get(i)));
+                    Point city2Pos = cityPositions.get(getCityName(shortestPath.get(i + 1)));
+                    g2d.drawLine(city1Pos.x, city1Pos.y, city2Pos.x, city2Pos.y);
+                }
             }
         }
 
-        if (route != null) {
-            g.setColor(Color.BLUE);
-            for (int i = 0; i < route.size() - 1; i++) {
-                Point p1 = route.get(i);
-                Point p2 = route.get(i + 1);
-                g.drawLine(p1.x, p1.y, p2.x, p2.y);
-            }
-
-            g.setColor(Color.RED);
-            for (Point p : route) {
-                g.fillOval(p.x - 5, p.y - 5, 10, 10);
-            }
+        @Override
+        public Dimension getPreferredSize() {
+            return new Dimension(800, 600);
         }
     }
 
-    private Point findPointByName(String cityName) {
-        for (Point node : nodes) {
-            if (node.name.equals(cityName)) {
-                return node;
+    private String getCityName(int index) {
+        for (Map.Entry<String, Integer> entry : cityIndexMap.entrySet()) {
+            if (entry.getValue() == index) {
+                return entry.getKey();
             }
         }
         return null;
     }
-}
 
-class Point {
-    int x, y;
-    String name;
-
-    public Point(String name, int x, int y) {
-        this.name = name;
-        this.x = x;
-        this.y = y;
-    }
-
-    public Point(String point) {
-    }
-
-    @Override
-    public String toString() {
-        return name;
-    }
-}
-
-class Connection {
-    String city1, city2;
-
-    public Connection(String city1, String city2) {
-        this.city1 = city1;
-        this.city2 = city2;
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(RouteOptimizationGUI::new);
     }
 }

@@ -178,7 +178,7 @@ public class FileConverterrGUI extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            FileConverterGUI converterGUI = new FileConverterGUI();
+            FileConverterrGUI converterGUI = new FileConverterrGUI();
             converterGUI.setVisible(true);
         });
     }
